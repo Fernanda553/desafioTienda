@@ -1,7 +1,7 @@
 require('dotenv')
 const express = require('express')
 const cors = require('cors')
-const { allJoyas, allJoyasformatted } = require('../utils/pg')
+const { allJewelsPerPage, getAllJewelsByFilters } = require('../utils/pg')
 
 const PORT = process.env.PORT ?? 3000
 const app = express()
@@ -10,13 +10,13 @@ app.use(cors())
 app.use(express.json())
 
 app.get('/joyas', (req, res) => {
-  allJoyas(req.query)
+  allJewelsPerPage(req.query)
     .then((result) => res.status(result?.code ? 500 : 200).json(result))
     .catch((error) => res.status(500).json(error))
 })
 
-app.get('/joyasformat', (req, res) => {
-  allJoyasformatted(req.query)
+app.get('/joyas/filtros', (req, res) => {
+  getAllJewelsByFilters(req.query)
     .then((result) => res.status(result?.code ? 500 : 200).json(result))
     .catch((error) => res.status(500).json(error))
 })
