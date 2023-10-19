@@ -18,6 +18,8 @@ const genericSqlQuery = (query, values) => pool
   .then(({ rows }) => rows)
   .catch(({ code, message }) => ({ code, message }))
 
+const joyasPorId = async (id) => await genericSqlQuery('SELECT * FROM inventario WHERE id = $1;', [id])
+
 const HATEOAS = (joyas, limit, order, page) => {
   const results = joyas.map((j) => ({
     name: j.nombre,
@@ -31,8 +33,6 @@ const HATEOAS = (joyas, limit, order, page) => {
   }
 }
 
-const joyasPorId = async (id) => await genericSqlQuery('SELECT * FROM inventario WHERE id = $1;', [id])
-
 const todasLasJoyas = async ({ limit = 6, page = 1, order = 'nombre_asc' }) => {
   const [campo, direccion] = order.split('_')
   const offSet = limit * (page - 1)
@@ -42,17 +42,21 @@ const todasLasJoyas = async ({ limit = 6, page = 1, order = 'nombre_asc' }) => {
 }
 
 // obtener joyas ordenadas por filtro
-const getAllJewelsByFilters = async ({ preciomax, preciomin, categoria = 'aros', metal = 'oro' }) => {
+const todasLasJoyasPorFiltros = async ({ preciomax, preciomin, categoria, metal }) => {
   const filters = []
-  let query = 'SELECT * FROM inventario'
-  if (preciomin) filters.push(`precio >= ${preciomin}`)
-  if (preciomax) filters.push(`precio <= ${preciomax}`)
+  const values = []
+  let query = 'SELECT * FROM inventario '
+  if (preciomax) filters.push(`precio <= $${values.push(preciomax)}`)
+  if (preciomin) filters.push(`precio >= $${values.push(preciomin)}`)
+  if (categoria) filters.push(`categoria = $${values.push(categoria)}`)
+  if (metal) filters.push(`metal = $${values.push(metal)}`)
   if (filters.length > 0) query += `WHERE ${filters.join(' AND ')};`
-  return await genericSqlQuery(query)
+  console.log(query)
+  return await genericSqlQuery(query, values)
 }
 
 module.exports = {
-  getAllJewelsByFilters,
   joyasPorId,
-  todasLasJoyas
+  todasLasJoyas,
+  todasLasJoyasPorFiltros
 }
