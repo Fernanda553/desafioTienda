@@ -18,37 +18,27 @@ const genericSqlQuery = (query, values) => pool
   .then(({ rows }) => rows)
   .catch(({ code, message }) => ({ code, message }))
 
-/* const prepararHATEOAS = (medicamentos) => {
-  const results = medicamentos.map((m) => {
-    return {
-      name: m.nombre,
-      href: `/joyas/${m.id}`
-    }
-  }).slice(0, 4)
-  const total = medicamentos.length
-  const HATEOAS = {
-    total,
+const HATEOAS = (joyas, limit, order, page) => {
+  const results = joyas.map((j) => ({
+    name: j.nombre,
+    href: `/joyas/joya/${j.id}`
+  }))
+  return {
+    total: joyas.length,
+    next: page < 2 ? `/joyas?limit=${limit}&order=${order}&page=${+page + 1}` : null,
+    previous: page > 1 ? `/joyas?limit=${limit}&order=${order}&page=${page - 1}` : null,
     results
   }
-  return HATEOAS
-} */
-
-// obtener todas las joyas
-const allJewels = async ({ limit = 6 }) => await genericSqlQuery('SELECT * FROM inventario LIMIT $1;', [limit])
-
-// obtener todas las joyas pero con un limit y un order
-const allJewelsformatted = async ({ limit = 6, order = 'nombre_asc' }) => {
-  const [campo, direccion] = order.split('_')
-  const formatted = format('SELECT * FROM inventario ORDER BY %s %s LIMIT %s;', campo, direccion, limit)
-  return await genericSqlQuery(formatted)
 }
 
-// obtener todas las joyas por pagina pero con limit y order
-const allJewelsPerPage = async ({ limit = 6, page = 0, order = 'nombre_asc' }) => {
+const joyasPorId = async (id) => await genericSqlQuery('SELECT * FROM inventario WHERE id = $1;', [id])
+
+const todasLasJoyas = async ({ limit = 6, page = 1, order = 'nombre_asc' }) => {
   const [campo, direccion] = order.split('_')
-  const offSet = limit * page
+  const offSet = limit * (page - 1)
   const formatted = format('SELECT * FROM inventario ORDER BY %s %s LIMIT %s OFFSET %s', campo, direccion, limit, offSet)
-  return await genericSqlQuery(formatted)
+  const joyas = await genericSqlQuery(formatted)
+  return HATEOAS(joyas, limit, order, page)
 }
 
 // obtener joyas ordenadas por filtro
@@ -57,13 +47,12 @@ const getAllJewelsByFilters = async ({ preciomax, preciomin, categoria = 'aros',
   let query = 'SELECT * FROM inventario'
   if (preciomin) filters.push(`precio >= ${preciomin}`)
   if (preciomax) filters.push(`precio <= ${preciomax}`)
-  if (filters.length > 0) query += `WHERE ${filters.join(' AND ')}`
+  if (filters.length > 0) query += `WHERE ${filters.join(' AND ')};`
   return await genericSqlQuery(query)
 }
 
 module.exports = {
-  allJewels,
-  allJewelsformatted,
-  allJewelsPerPage,
-  getAllJewelsByFilters
+  getAllJewelsByFilters,
+  joyasPorId,
+  todasLasJoyas
 }
