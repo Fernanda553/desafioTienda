@@ -1,6 +1,7 @@
 require('dotenv')
 const express = require('express')
 const cors = require('cors')
+const { forRoutes } = require('../middleware')
 const { todasLasJoyasPorFiltros, joyasPorId, todasLasJoyas } = require('../utils/pg')
 
 const PORT = process.env.PORT ?? 3000
@@ -8,6 +9,7 @@ const app = express()
 
 app.use(cors())
 app.use(express.json())
+app.use(forRoutes)
 
 app.get('/joyas', (req, res) => {
   todasLasJoyas(req.query)
